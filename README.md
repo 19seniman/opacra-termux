@@ -3,8 +3,13 @@
 Menambang **OPCA** (Opacra) dari HP Android lewat Termux. Semua langkah di bawah sudah diuji
 sampai miner benar-benar berjalan dan pool menerima share.
 
-> **Baca dulu:** OPCA adalah koin privacy yang baru diluncurkan (mainnet 8 November 2026) dan
-> **MARKET PENJUALAN** — https://neoxa.exchange/register?ref=NEXFEC4ACFC
+> **Baca dulu:** OPCA baru diluncurkan (mainnet 8 November 2026) dan pasarnya masih sangat muda.
+> **MARKET PENJUALAN** — OPCA/USDT di NeoxEX: https://neoxa.exchange/register?ref=NEXFEC4ACFC
+>
+> Pada 16 November 2026 harganya sekitar **$0,42**, rentang 24 jam $0,106–$1,00, dan perubahan
+> **−58%** dalam sehari. Harganya ada, tetapi likuiditasnya tipis: jangan jadikan hasil mining
+> sebagai penghasilan tetap, dan jangan jalankan di HP sehari-hari karena RandomX memakai CPU
+> 100% terus-menerus.
 
 ---
 
@@ -175,40 +180,147 @@ cd ~/xmrig/build && ./xmrig -o pool.opacra.org:4242 -a rx/opca -u "$(cat ~/mainn
 
 ---
 
-## 10. Menjalankan di PC atau Linux
+## 10. PC, Windows, dan VPS
 
-Build dari source **hanya dibutuhkan di ARM**. Di PC x86-64, miner sudah tersedia sebagai
-binary siap pakai, jadi tidak ada compile sama sekali.
+Build dari source **hanya dibutuhkan di ARM**. Di x86-64 miner sudah tersedia sebagai binary
+siap pakai, jadi tidak ada compile sama sekali.
 
-### Linux x64
+### 10.1 Alamat wallet — sama untuk semua platform
+
+Alamat dimasukkan **saat menjalankan miner**, lewat parameter `-u`. Tidak ada file konfigurasi
+yang perlu diedit.
+
+Simpan sekali supaya tidak mengetik 98 karakter berulang kali:
+
+```bash
+echo 'Pa2TYWPjtq5ExMeZhNB3BRCdUY78DF9gNbMTML6LSznzdGioWn4Ah2hAMfF1oovobV7Gc8ThcprCSRScJUwHGj5t9dBoDfmitH' > ~/mainnet-address.txt
+```
+
+Ganti dengan alamatmu. Bentuk benar: 98 karakter, diawali `Pa`. Alamat aman dibagikan; yang
+**tidak boleh** dibagikan adalah 25 kata seed wallet.
+
+### 10.2 Linux x64 — PC, laptop, atau VPS
+
+**Langkah 1 — unduh miner**
 
 ```bash
 mkdir -p ~/opacra && cd ~/opacra
 curl -sLO https://github.com/opacra/opacra-xmrig/releases/download/v1.0.0/opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64.tar.gz
-tar -xzf opacra-xmrig-*-linux-x64.tar.gz
-./xmrig -o pool.opacra.org:4242 -a rx/opca -u 'Pa...alamatmu' -p pc -k
 ```
 
-Tanpa `--randomx-mode=light`: PC punya RAM untuk dataset 2,3 GB, dan hasilnya lebih tinggi.
+**Langkah 2 — verifikasi checksum** (jangan dilewati, ini binary yang akan jalan di mesinmu)
 
-### Windows
+```bash
+sha256sum opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64.tar.gz
+```
 
-Unduh `opacra-xmrig-6.26.0-opacra-1.0.0-win-x64.zip`, ekstrak, lalu di PowerShell:
+Harus keluar persis:
+
+```
+810eaaa8364bb4743145a1ced64f95f00fcfae516262d1d4e721e5f5b6129960
+```
+
+Nilai itu bisa dicocokkan dengan `SHA256SUMS-xmrig-v1.0.0.asc` yang ditandatangani kunci rilis
+Opacra (fingerprint `D861 7219 6FEC AAB6 84F5 B3FD CB65 D212 D0B1 162B`).
+
+**Langkah 3 — ekstrak**
+
+```bash
+tar -xzf opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64.tar.gz
+cd opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64
+./xmrig --version
+```
+
+`--version` harus menampilkan `XMRig 6.26.0`. Isi paket cuma tiga file: `LICENSE`,
+`README.txt`, dan `xmrig`.
+
+**Langkah 4 — jalankan di depan (untuk tes)**
+
+```bash
+./xmrig -o pool.opacra.org:4242 -a rx/opca -u "$(cat ~/mainnet-address.txt)" -p pc -k
+```
+
+Tanda berhasil: `use pool pool.opacra.org:4242`, lalu `accepted`. Tekan `h` untuk hashrate,
+`q` untuk keluar.
+
+**Langkah 5 — jalankan di background (khusus VPS)**
+
+Kalau sesi SSH ditutup, miner ikut mati. Dua cara:
+
+*Cara cepat, pakai `screen`:*
+
+```bash
+sudo apt install -y screen        # sekali saja
+screen -S opacra
+./xmrig -o pool.opacra.org:4242 -a rx/opca -u "$(cat ~/mainnet-address.txt)" -p vps -k
+# lepas layar: Ctrl-A lalu D
+# masuk lagi: screen -r opacra
+```
+
+*Cara permanen, pakai systemd:*
+
+```bash
+sudo tee /etc/systemd/system/opacra-miner.service >/dev/null <<EOF
+[Unit]
+Description=Opacra miner
+After=network-online.target
+
+[Service]
+ExecStart=/root/opacra/opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64/xmrig -o pool.opacra.org:4242 -a rx/opca -u $(cat ~/mainnet-address.txt) -p vps -k
+Restart=always
+RestartSec=10
+Nice=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+sudo systemctl daemon-reload
+sudo systemctl enable --now opacra-miner
+sudo systemctl status opacra-miner --no-pager
+```
+
+Lihat log: `journalctl -u opacra-miner -f` · Hentikan: `sudo systemctl stop opacra-miner`
+
+Sesuaikan `/root/opacra/...` kalau kamu bukan root — ganti dengan `$HOME/opacra/...`.
+
+### 10.3 Windows
+
+**Langkah 1** — unduh
+`opacra-xmrig-6.26.0-opacra-1.0.0-win-x64.zip`, ekstrak ke folder, misal `C:\opacra`.
+Checksum SHA-256 yang benar: `9e900765326ff9a9f17ab6d8e46ee9d93ce37e4f6d50a5601e21d8cfb553934b`
+
+**Langkah 2** — izinkan folder di Defender. Ini wajib: Defender memblokir semua miner, bukan
+hanya yang ini. Buka **Windows Security → Virus & threat protection → Manage settings →
+Exclusions → Add folder** → pilih `C:\opacra`.
+
+**Langkah 3** — buka PowerShell di folder itu (Shift + klik kanan → *Open PowerShell here*),
+lalu tes:
 
 ```powershell
 .\xmrig.exe -o pool.opacra.org:4242 -a rx/opca -u "Pa...alamatmu" -p pc -k
 ```
 
-Windows Defender akan memblokir miner. Itu berlaku untuk semua miner, bukan tanda malware;
-kamu perlu menambahkan pengecualian folder secara manual.
+**Langkah 4** — kalau sudah jalan, buat `mulai.bat` di folder yang sama supaya tidak perlu
+mengetik ulang:
 
-### Linux ARM (Raspberry Pi, VPS ARM)
+```bat
+@echo off
+cd /d %~dp0
+xmrig.exe -o pool.opacra.org:4242 -a rx/opca -u "Pa...alamatmu" -p pc -k
+pause
+```
+
+Klik dua kali `mulai.bat` untuk mulai mining.
+
+### 10.4 Linux ARM — Raspberry Pi atau VPS ARM
 
 Sama seperti Termux, tetapi dengan `apt` dan tanpa keanehan Termux:
 
 ```bash
 sudo apt update && sudo apt install -y git cmake make g++ pkg-config libssl-dev libuv1-dev libhwloc-dev
 git clone --depth 1 -b v6.26.0 https://github.com/xmrig/xmrig.git && cd xmrig
+git rev-parse HEAD    # harus b2ca72480c58d197e18c885d9fc1a0c8d517e60a
 curl -sLO https://raw.githubusercontent.com/opacra/opacra-xmrig/main/opacra-xmrig.patch
 git apply opacra-xmrig.patch
 sed -i 's/kDefaultDonateLevel = 1;/kDefaultDonateLevel = 0;/' src/donate.h
@@ -218,12 +330,24 @@ cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_OPENCL=OFF -DWITH_CUDA=OFF
 make -j$(nproc)
 ```
 
+Lalu jalankan:
+
+```bash
+./xmrig -o pool.opacra.org:4242 -a rx/opca -u "$(cat ~/mainnet-address.txt)" -p arm -k
+```
+
 Di sini `-DWITH_HWLOC=OFF` **tidak** diperlukan karena `libhwloc-dev` tersedia lewat apt. Itu
 satu-satunya perbedaan penting dari resep Termux.
 
-### Perbandingan hasil
+### 10.5 Cek hasil dan perbandingan
 
-Dari data jaringan saat dokumen ini ditulis, **OPCA/hari ≈ H/s ÷ 231**:
+Dashboard pool (sama untuk semua platform):
+
+```
+https://pool.opacra.org/#ALAMATMU
+```
+
+Perkiraan hasil, dari data jaringan saat dokumen ini ditulis — **OPCA/hari ≈ H/s ÷ 231**:
 
 | Perangkat | Hashrate | OPCA/hari |
 |---|---|---|
@@ -231,8 +355,9 @@ Dari data jaringan saat dokumen ini ditulis, **OPCA/hari ≈ H/s ÷ 231**:
 | Laptop 4 core | ±2.000 | ±8,7 |
 | PC desktop 8 core | ±6.000 | ±26 |
 
-PC bisa memberi hasil sekitar 20× HP. Tapi ingat: harga OPCA masih nol, jadi 26 OPCA/hari tetap
-belum bernilai uang sampai ada bursa yang memperdagangkannya.
+PC bisa memberi hasil sekitar 20× HP. Dengan harga $0,42 (16 November 2026), 26 OPCA/hari setara
+sekitar **$11/hari** sebelum listrik — tetapi harga itu sempat turun 58% dalam satu hari, jadi angka
+rupiahnya bisa berubah cepat ke arah mana pun.
 
 ---
 
@@ -241,13 +366,14 @@ belum bernilai uang sampai ada bursa yang memperdagangkannya.
 Diukur dari jaringan Opacra saat dokumentasi ini ditulis (hashrate jaringan 1,53 MH/s,
 reward 2,3715 OPCA/block, 2880 block/hari):
 
-| Hashrate | OPCA/hari | Payout pertama (0,33) |
-|---|---|---|
-| 150 H/s | ±0,7 | ±11 jam |
-| 300 H/s | ±1,3 | ±6 jam |
-| 600 H/s | ±2,7 | ±3 jam |
+| Hashrate | OPCA/hari | Payout pertama (0,33 OPCA) | ≈USD/hari @ $0,42 |
+|---|---|---|---|
+| 150 H/s | ±0,7 | ±11 jam | ±$0,27 |
+| 300 H/s | ±1,3 | ±6 jam | ±$0,55 |
+| 600 H/s | ±2,7 | ±3 jam | ±$1,10 |
 
-Angka ini koin, bukan rupiah — lihat catatan di bagian atas.
+Kolom USD memakai harga 16 November 2026 dan **bukan janji**: dalam 24 jam hari itu harga bergerak
+dari $0,106 ke $1,00. Kalau OPCA kehilangan pasarnya, angkanya kembali ke nol.
 
 ## Troubleshooting
 

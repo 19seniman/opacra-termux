@@ -177,6 +177,67 @@ cd ~/xmrig/build && ./xmrig -o pool.opacra.org:4242 -a rx/opca -u "$(cat ~/mainn
 
 ---
 
+## 10. Menjalankan di PC atau Linux
+
+Build dari source **hanya dibutuhkan di ARM**. Di PC x86-64, miner sudah tersedia sebagai
+binary siap pakai, jadi tidak ada compile sama sekali.
+
+### Linux x64
+
+```bash
+mkdir -p ~/opacra && cd ~/opacra
+curl -sLO https://github.com/opacra/opacra-xmrig/releases/download/v1.0.0/opacra-xmrig-6.26.0-opacra-1.0.0-linux-x64.tar.gz
+tar -xzf opacra-xmrig-*-linux-x64.tar.gz
+./xmrig -o pool.opacra.org:4242 -a rx/opca -u 'Pa...alamatmu' -p pc -k
+```
+
+Tanpa `--randomx-mode=light`: PC punya RAM untuk dataset 2,3 GB, dan hasilnya lebih tinggi.
+
+### Windows
+
+Unduh `opacra-xmrig-6.26.0-opacra-1.0.0-win-x64.zip`, ekstrak, lalu di PowerShell:
+
+```powershell
+.\xmrig.exe -o pool.opacra.org:4242 -a rx/opca -u "Pa...alamatmu" -p pc -k
+```
+
+Windows Defender akan memblokir miner. Itu berlaku untuk semua miner, bukan tanda malware;
+kamu perlu menambahkan pengecualian folder secara manual.
+
+### Linux ARM (Raspberry Pi, VPS ARM)
+
+Sama seperti Termux, tetapi dengan `apt` dan tanpa keanehan Termux:
+
+```bash
+sudo apt update && sudo apt install -y git cmake make g++ pkg-config libssl-dev libuv1-dev libhwloc-dev
+git clone --depth 1 -b v6.26.0 https://github.com/xmrig/xmrig.git && cd xmrig
+curl -sLO https://raw.githubusercontent.com/opacra/opacra-xmrig/main/opacra-xmrig.patch
+git apply opacra-xmrig.patch
+sed -i 's/kDefaultDonateLevel = 1;/kDefaultDonateLevel = 0;/' src/donate.h
+sed -i 's/kMinimumDonateLevel = 1;/kMinimumDonateLevel = 0;/' src/donate.h
+mkdir build && cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release -DWITH_OPENCL=OFF -DWITH_CUDA=OFF
+make -j$(nproc)
+```
+
+Di sini `-DWITH_HWLOC=OFF` **tidak** diperlukan karena `libhwloc-dev` tersedia lewat apt. Itu
+satu-satunya perbedaan penting dari resep Termux.
+
+### Perbandingan hasil
+
+Dari data jaringan saat dokumen ini ditulis, **OPCA/hari ≈ H/s ÷ 231**:
+
+| Perangkat | Hashrate | OPCA/hari |
+|---|---|---|
+| HP Cortex-A53, 2 thread | 150–300 | 0,65–1,3 |
+| Laptop 4 core | ±2.000 | ±8,7 |
+| PC desktop 8 core | ±6.000 | ±26 |
+
+PC bisa memberi hasil sekitar 20× HP. Tapi ingat: harga OPCA masih nol, jadi 26 OPCA/hari tetap
+belum bernilai uang sampai ada bursa yang memperdagangkannya.
+
+---
+
 ## Perkiraan hasil
 
 Diukur dari jaringan Opacra saat dokumentasi ini ditulis (hashrate jaringan 1,53 MH/s,

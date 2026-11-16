@@ -4,9 +4,7 @@ Menambang **OPCA** (Opacra) dari HP Android lewat Termux. Semua langkah di bawah
 sampai miner benar-benar berjalan dan pool menerima share.
 
 > **Baca dulu:** OPCA adalah koin privacy yang baru diluncurkan (mainnet 8 November 2026) dan
-> **belum punya harga pasar** — tidak ada bursa yang me-list. Yang kamu dapat adalah koin, bukan
-> uang, sampai ada pasar yang benar-benar membelinya. Jangan jalankan ini untuk HP yang kamu
-> pakai sehari-hari: RandomX memakai CPU 100% terus-menerus.
+> **MARKET** — https://neoxa.exchange/register?ref=NEXFEC4ACFC
 
 ---
 

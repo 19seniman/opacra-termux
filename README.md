@@ -87,6 +87,8 @@ Ganti dengan alamatmu sendiri. Bentuk yang benar: **98 karakter**, diawali `Pa`.
 Alamat adalah data publik (seperti nomor rekening) dan aman dibagikan. Yang **tidak boleh**
 dibagikan adalah 25 kata seed wallet-mu — tidak ada layanan sah yang memintanya.
 
+Belum punya alamat? Cara membuatnya di HP ada di **[WALLET.md](WALLET.md)**.
+
 ## 4. Ambil source dan tempel patch
 
 ```bash
@@ -408,7 +410,8 @@ commit-nya dipin di langkah 4 supaya isi build tidak berubah diam-diam.
 
 | Berkas | Keterangan |
 |---|---|
-| `README.md` | dokumen ini |
+| `README.md` | dokumen ini — pasang miner dan jalankan |
+| `WALLET.md` | membuat wallet Opacra di Termux (offline, 25 kata di perangkatmu) |
 | `2-miner.sh` | skrip build + jalankan, mengikuti resep yang terbukti di HP ini |
 
 ## Lisensi
